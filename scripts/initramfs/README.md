@@ -17,6 +17,8 @@
 |20240422|foonerd|OEM device handling move to beta
 |20240508|foonerd|Beta testing start across all builds
 |20240528|foonerd|Release across all builds
+|20240822|foonerd|Promoted to stable
+|20250110|foonerd|Plymouth rotation
 
 ## ```##TODO```
 
@@ -102,7 +104,7 @@ Use ```maybe_volumio_break <break name> "init: $LINENO"``` for that and remove t
 
 ### Valid breakpoints are:
 ```
-top, modules, premount, mount, udev-slumber, cust-init-part, init-part-pars, progress, backup_gpt, krnl-archive, search-for-firmw, search-fact-reset, search-fact-reset, krnl-rollbck,krnl-upd, resize-data, mnt-overlayfs, cust-upd-uuid, updfstab, bottom, init
+top, modules, premount, mount, udev-slumber, cust-init-part, init-part-pars, progress, backup_gpt, krnl-archive, search-for-firmw, search-fact-reset, search-fact-reset, krnl-rollbck,krnl-upd, resize-data, mnt-overlayfs, cust-upd-uuid, updfstab, bottom, init, rotate-plymouth
 ```
 
 ### Configuring a breakpoint
@@ -120,7 +122,38 @@ This is different from the way debugging is done with the current version, which
 Add "plymouth.debug" to the cmdline parameters. 
 Boot and just let it run. After boot, login (```ctrl-F1```) and check file ```/var/log/plymouth-debug.log```
 
+## 4. Volumio Player Plymouth Theme - Rotation Support
 
+This Plymouth theme supports dynamic screen rotation using the `dtoverlay` method. The rotation is configured via the `rotate` parameter in `/boot/config.txt`, allowing for seamless adjustments without modifying the theme script directly.
+
+#### Key Features
+1. **Dynamic Rotation**:
+   - Automatically adjusts animations and text messages based on the `ROTATE` environment variable derived from the device tree overlay (`dtoverlay=plymouth-rotate`).
+
+2. **Alignment**:
+   - Ensures both the animation (`flyingman_sprite`) and messages are properly centered and rotated to match the configured orientation.
+
+3. **Seamless Integration**:
+   - Uses the `dtoverlay` method to dynamically pass rotation settings to Plymouth during the boot process.
+
+#### **Configuration**
+1. Add the following to `/boot/config.txt`:
+   ```ini
+   dtoverlay=plymouth-rotate
+   rotate=90  # Options: 0, 90, 180, 270
+   ```
+
+2. Rebuild the initramfs to apply changes:
+   ```bash
+   sudo mkinitramfs -o /boot/initramfs.img
+   ```
+
+3. Reboot the system to observe the rotation effect.
+
+#### **Technical Details**
+- The `ROTATE` environment variable is extracted from `/proc/device-tree/plymouth-rotate/rotate`.
+- Animations and messages are adjusted dynamically using the rotation value.
+- Fully backward-compatible for systems without rotation configuration (`rotate=0` by default).
 
 # Integrating the new INITRAMFS (initv3)
 ## WIP
