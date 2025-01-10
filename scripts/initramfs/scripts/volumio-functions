@@ -4,6 +4,20 @@ plymouth_msg() {
   /bin/plymouth message --text="$*"
 }
 
+rotate_plymouth_theme() {
+    local ROTATE=0  # Default rotation
+
+    # Extract rotation value from the device tree overlay
+    if [ -f "/proc/device-tree/plymouth-rotate/rotate" ]; then
+        ROTATE=$(cat /proc/device-tree/plymouth-rotate/rotate)
+    fi
+
+    # Export the rotation value for Plymouth
+    log_begin_msg "Plymouth rotation set to: $ROTATE"
+    export ROTATE
+    log_end_msg
+}
+
 maybe_volumio_break() {
 #
 # Enables pre-defined 'init' flow breakpoints by spawning a shell.
