@@ -1,4 +1,4 @@
-#  volumio-player.script - boot splash plugin
+#  volumio.script - boot splash plugin
 #
 #  Copyright (C) 2024 Volumio Srl
 #  
@@ -31,10 +31,10 @@
 
 #  Set the background gradient colors
 #  Nice colour on top of the screen fading to
-Window.SetBackgroundTopColor(0.0, 0.00, 0.0)  # Black at the top
+Window.SetBackgroundTopColor(0.0, 0.00, 0.0);  # Black at the top
 
 #  An equally nice colour on the bottom
-Window.SetBackgroundBottomColor(0.0, 0.00, 0.0)  # Black at the bottom
+Window.SetBackgroundBottomColor(0.0, 0.00, 0.0);  # Black at the bottom
 
 #  Function to dynamically adjust sprite positions and rotation
 #  - Ensures proper placement for rotated screens
@@ -43,110 +43,112 @@ Window.SetBackgroundBottomColor(0.0, 0.00, 0.0)  # Black at the bottom
 #  - Place vertically in the screen centre: flyingman_sprite.SetY(Window.GetHeight() / 2 - flyingman_image[1].GetHeight() / 2);
 
 fun adjust_sprite_position_and_rotation(sprite, image) {
-    local rotation = tonumber(os.getenv("ROTATE")) or 0  # Get rotation from the environment variable
+#    local rotation = tonumber(os.getenv("ROTATE")) or 0;  # Get rotation from the environment variable
+rotation = tonumber(os.getenv("PLYMOUTH_ROTATE")) or 0;  # Assume `rotation` is passed as a global variable
 
     if rotation == 90 then
-        sprite.Rotate(90)
-        sprite.SetX(Window.GetHeight() / 2 - image.GetHeight() / 2)
-        sprite.SetY(Window.GetWidth() / 2 - image.GetWidth() / 2)
+        sprite.Rotate(90);
+        sprite.SetX(Window.GetHeight() / 2 - image.GetHeight() / 2);
+        sprite.SetY(Window.GetWidth() / 2 - image.GetWidth() / 2);
     elseif rotation == 180 then
-        sprite.Rotate(180)
-        sprite.SetX(Window.GetWidth() / 2 - image.GetWidth() / 2)
-        sprite.SetY(Window.GetHeight() / 2 - image.GetHeight() / 2)
+        sprite.Rotate(180);
+        sprite.SetX(Window.GetWidth() / 2 - image.GetWidth() / 2);
+        sprite.SetY(Window.GetHeight() / 2 - image.GetHeight() / 2);
     elseif rotation == 270 then
-        sprite.Rotate(270)
-        sprite.SetX(Window.GetHeight() / 2 - image.GetHeight() / 2)
-        sprite.SetY(Window.GetWidth() / 2 - image.GetWidth() / 2)
+        sprite.Rotate(270);
+        sprite.SetX(Window.GetHeight() / 2 - image.GetHeight() / 2);
+        sprite.SetY(Window.GetWidth() / 2 - image.GetWidth() / 2);
     else
         -- Default position for no rotation
-        sprite.SetX(Window.GetWidth() / 2 - image.GetWidth() / 2)
-        sprite.SetY(Window.GetHeight() / 2 - image.GetHeight() / 2)
-    end
+        sprite.SetX(Window.GetWidth() / 2 - image.GetWidth() / 2);
+        sprite.SetY(Window.GetHeight() / 2 - image.GetHeight() / 2);
+    end;
 }
 
 #  Load the sequence of images for animation
 #  - Each frame is stored in flyingman_image[]
-for (i = 1; i < 90; i++)
-    flyingman_image[i] = Image("progress-" + i + ".png")
-flyingman_sprite = Sprite()
+for (i = 1; i < 90; i++) do
+    flyingman_image[i] = Image("progress-" + i + ".png");
+end;
+flyingman_sprite = Sprite();
 
 #  Adjust the position and rotation of the flyingman_sprite
-adjust_sprite_position_and_rotation(flyingman_sprite, flyingman_image[1])
+adjust_sprite_position_and_rotation(flyingman_sprite, flyingman_image[1]);
 
-progress = 1  # Initialize progress counter for animation
+progress = 1;  # Initialize progress counter for animation
 
 #------------------------------------------------ MESSAGES ------------------------------------------------#
 
 #  Restrict the scroll space for text messages
-num_scroll_lines = 5  # Maximum number of visible lines
-line_width = 80       # Maximum line width for text
+num_scroll_lines = 5;  # Maximum number of visible lines
+line_width = 80;       # Maximum line width for text
 
 #  Create a message sprite to handle text positioning and rotation
-message_sprite = Sprite()
-adjust_sprite_position_and_rotation(message_sprite, flyingman_image[1])
+message_sprite = Sprite();
+adjust_sprite_position_and_rotation(message_sprite, flyingman_image[1]);
 
 #  Initialize text images and their positions
 #  - Align with rotation and spacing
-for (index = 0; index < num_scroll_lines; index++) {
-    lines[index] = Image.Text("", 1, 1, 1, 1, "Sans 8")  # Create blank text lines with font size 8
-    message[index] = Sprite()  # Create a sprite for each text line
-    message[index].SetX(message_sprite.GetX())  # Set the X position for each line
-    message[index].SetY(message_sprite.GetY() + (index * 20))  # Offset each line vertically
-    message[index].SetZ(10000)  # Ensure the text is rendered above other elements
-    message[index].SetImage(lines[index])  # Attach the image to the sprite
-}
+for (index = 0; index < num_scroll_lines; index++) do
+    lines[index] = Image.Text("", 1, 1, 1, 1, "Sans 8");  # Create blank text lines with font size 8
+    message[index] = Sprite();  # Create a sprite for each text line
+    message[index].SetX(message_sprite.GetX());  # Set the X position for each line
+    message[index].SetY(message_sprite.GetY() + (index * 20));  # Offset each line vertically
+    message[index].SetZ(10000);  # Ensure the text is rendered above other elements
+    message[index].SetImage(lines[index]);  # Attach the image to the sprite
+end;
 
 #  Function to calculate the length of a string
 fun StringLength(string) {
-    pos = 0
-    str = String(string)
-    while str.CharAt(pos) pos++  # Count each character until the end of the string
-    return pos
+    pos = 0;
+    str = String(string);
+    while str.CharAt(pos) do pos++; end;
+    return pos;
 }
 
 #  Scroll message callback function
 #  - Handles adding new messages and shifting existing ones
 fun scroll_message_callback(text) {
     # Truncate the message if it exceeds the maximum line width
-    if (StringLength(text) > line_width) {
-        text = text.SubString(0, line_width - 3)  # Keep only the first `line_width - 3` characters
-        text += "..."  # Add ellipsis to indicate truncation
-    }
+    if (StringLength(text) > line_width) then
+        text = text.SubString(0, line_width - 3);  # Keep only the first `line_width - 3` characters
+        text += "...";  # Add ellipsis to indicate truncation
+    end;
 
     # Shift existing messages up, discarding the topmost line
-    for (index = 0; index < num_scroll_lines - 1; index++) {
-        lines[index] = lines[index + 1]
-    }
+    for (index = 0; index < num_scroll_lines - 1; index++) do
+        lines[index] = lines[index + 1];
+    end;
 
     # Add the new message at the bottom
-    lines[num_scroll_lines - 1] = Image.Text(text, 1, 1, 1, 1, "Sans 8")
+    lines[num_scroll_lines - 1] = Image.Text(text, 1, 1, 1, 1, "Sans 8");
 
     # Reposition all messages to ensure they remain aligned
-    for (index = 0; index < num_scroll_lines; index++) {
-        message[index].SetImage(lines[index])  # Update the sprite image
-        index_pos_x = Window.GetWidth() / 2 - lines[index].GetWidth() / 2  # Center the text horizontally
-        message[index].SetX(index_pos_x)  # Apply the calculated X position
-        message[index].SetY(message_sprite.GetY() + (index * 20))  # Offset each line vertically
-        message[index].SetZ(10000)  # Ensure proper layering
-    }
+    for (index = 0; index < num_scroll_lines; index++) do
+        message[index].SetImage(lines[index]);  # Update the sprite image
+        index_pos_x = Window.GetWidth() / 2 - lines[index].GetWidth() / 2;  # Center the text horizontally
+        message[index].SetX(index_pos_x);  # Apply the calculated X position
+        message[index].SetY(message_sprite.GetY() + (index * 20));  # Offset each line vertically
+        message[index].SetZ(10000);  # Ensure proper layering
+    end;
 }
 
 #------------------------------------------------- STATUS -------------------------------------------------#
 
 #  Optionally enable to display service start messages
-# Plymouth.SetUpdateStatusFunction(scroll_message_callback)
+# Plymouth.SetUpdateStatusFunction(scroll_message_callback);
 
 #------------------------------------------------- RENDER -------------------------------------------------#
 
 #  Attach the scroll message callback for rendering
-Plymouth.SetMessageFunction(scroll_message_callback)
+Plymouth.SetMessageFunction(scroll_message_callback);
 
 #  Function to refresh the animation during rendering
 fun refresh_callback() {
     # Update the sprite image based on the progress counter
-    flyingman_sprite.SetImage(flyingman_image[Math.Int(progress / 3) % 90])
-    progress++  # Increment the progress counter
+    flyingman_sprite.SetImage(flyingman_image[Math.Int(progress / 3) % 90]);
+    progress++;  # Increment the progress counter
 }
 
 #  Attach the refresh callback to handle animation rendering
-Plymouth.SetRefreshFunction(refresh_callback)
+Plymouth.SetRefreshFunction(refresh_callback);

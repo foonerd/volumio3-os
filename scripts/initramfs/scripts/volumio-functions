@@ -5,16 +5,23 @@ plymouth_msg() {
 }
 
 rotate_plymouth_theme() {
-    local ROTATE=0  # Default rotation
+    local ROTATE_VALUE=0  # Default rotation
 
-    # Extract rotation value from the device tree overlay
+    # Check the device tree overlay first
     if [ -f "/proc/device-tree/plymouth-rotate/rotate" ]; then
-        ROTATE=$(cat /proc/device-tree/plymouth-rotate/rotate)
+        ROTATE_VALUE=$(cat /proc/device-tree/plymouth-rotate/rotate)
+    fi
+
+    # Check the kernel cmdline for PLYMOUTH_ROTATE
+    if [ -z "$ROTATE_VALUE" ] || [ "$ROTATE_VALUE" -eq 0 ]; then
+        ROTATE_VALUE=$(grep -oP 'PLYMOUTH_ROTATE=\K[0-9]+' /proc/cmdline)
     fi
 
     # Export the rotation value for Plymouth
-    log_begin_msg "Plymouth rotation set to: $ROTATE"
+    ROTATE=${ROTATE_VALUE:-0}  # Ensure default is set
     export ROTATE
+    log_begin_msg "Plymouth rotation set to: $ROTATE"
+    echo "Plymouth rotation set to: $ROTATE" > /dev/kmsg
     log_end_msg
 }
 
@@ -427,6 +434,8 @@ process_kernel_update() {
     unpack_kernel
 
     restore_custom_config
+    
+    restore_cmdline_rotation
         
     if [ ! -z "${UUIDFMT}" ]; then
       log_begin_msg "Updating UUIDs"
@@ -575,6 +584,50 @@ restore_custom_config() {
     log_success_msg "Configuration ${BACKUP} restored"
     log_end_msg
   fi
+}
+
+restore_cmdline_rotation() {
+    local CMDLINE_FILE="${BOOTMNT}/cmdline.txt"
+    local BACKUP_FILE="${BOOTMNT}/cmdline.txt.bak"
+    local CONFIG_FILE="${BOOTMNT}/volumioconfig.txt"
+    local ROTATE_PARAM="PLYMOUTH_ROTATE"
+    local CURRENT_ROTATE
+    local NEW_CMDLINE
+
+    # Skip if cmdline.txt does not exist
+    if [ ! -f "$CMDLINE_FILE" ]; then
+        log_begin_msg "No cmdline.txt found. Skipping rotation restoration."
+        log_end_msg
+        return 0
+    fi
+
+    log_begin_msg "Restoring Plymouth rotation parameter in $CMDLINE_FILE"
+
+    # Create a backup if it doesn't already exist
+    if [ ! -f "$BACKUP_FILE" ]; then
+        cp "$CMDLINE_FILE" "$BACKUP_FILE"
+        log_success_msg "Backup created for $CMDLINE_FILE as $BACKUP_FILE"
+    fi
+
+    # Extract current rotation value
+    if [ -f "/proc/device-tree/plymouth-rotate/rotate" ]; then
+        CURRENT_ROTATE=$(cat /proc/device-tree/plymouth-rotate/rotate)
+    else
+        CURRENT_ROTATE=$(grep -oP '^ROTATE=\K[0-9]+' "$CONFIG_FILE" 2>/dev/null || echo "0")
+    fi
+
+    # Check if the parameter already exists
+    if grep -q "$ROTATE_PARAM=" "$CMDLINE_FILE"; then
+        log_success_msg "Rotation parameter already present in $CMDLINE_FILE"
+    else
+        # Append the rotation parameter
+        NEW_CMDLINE="$(cat $CMDLINE_FILE) $ROTATE_PARAM=$CURRENT_ROTATE"
+        echo "$NEW_CMDLINE" > "$CMDLINE_FILE"
+        sync
+        log_success_msg "Rotation parameter added: $ROTATE_PARAM=$CURRENT_ROTATE"
+    fi
+
+    log_end_msg
 }
 
 pre_kernel_update() {
