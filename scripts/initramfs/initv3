@@ -286,6 +286,18 @@ fi
 # Volumio required exception from Debian default
 # --- Exception BEGIN ---
 
+maybe_volumio_break rotate-plymouth "init: $LINENO"
+
+# Set up rotation for Plymouth theme
+
+rotate_plymouth_theme
+
+# ---- Exception END ----
+
+
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break top "init: $LINENO"
 
 # ---- Exception END ----
