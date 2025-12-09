@@ -130,9 +130,9 @@ device_image_tweaks() {
 
 	log "Adding archive.raspberrypi debian repo" "info"
 	cat <<-EOF >"${ROOTFSMNT}/etc/apt/sources.list.d/raspi.list"
-		deb http://archive.raspberrypi.org/debian/ buster main ui
+		deb http://archive2.volumio.org/debian/ buster main ui
 		# Uncomment line below then 'apt-get update' to enable 'apt-get source'
-		#deb-src http://archive.raspberrypi.org/debian/ buster main ui
+		#deb-src http://archive2.volumio.org/debian/ buster main ui
 	EOF
 
 	# raspberrypi-{kernel,bootloader} packages update kernel & firmware files
